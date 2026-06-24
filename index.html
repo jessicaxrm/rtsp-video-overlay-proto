@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Milesight — RTSP / Video Overlay Prototype</title>
+<style>
+  :root{
+    --primary:#16A1FE; --primary-hover:#40B9FF; --primary-light:#E8F7FF;
+    --text:#353D45; --text-2:#606266; --text-3:#778090; --placeholder:#99A5B2;
+    --border:#DCDFE6; --border-2:#E6E9EC; --page:#E6E6E6; --surface:#FFFFFF; --disabled:#F6F8FA;
+    --success:#21BF73; --warning:#FFB400; --danger:#E6492D;
+    --font:"Helvetica Neue",Helvetica,Arial,"PingFang SC","Microsoft YaHei",sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:var(--font);font-size:14px;color:var(--text);background:var(--page);}
+  a{color:inherit;text-decoration:none}
+
+  /* ===== Top bar ===== */
+  .topbar{height:48px;background:#262B33;color:#fff;display:flex;align-items:center;padding:0 20px;gap:8px;font-size:14px}
+  .topbar .logo{font-weight:700;letter-spacing:.5px}
+  .topbar .logo span{color:var(--primary)}
+  .topbar .spacer{flex:1}
+  .topbar .u{color:#cfd3da;display:flex;align-items:center;gap:6px}
+  .topbar .u b{color:#fff;font-weight:500}
+
+  /* ===== Main menubar ===== */
+  .menubar{display:flex;background:#3A414B;color:#cfd3da;height:40px;align-items:stretch;padding:0 8px}
+  .menubar .mi{padding:0 18px;display:flex;align-items:center;cursor:pointer;font-size:14px;border-bottom:3px solid transparent}
+  .menubar .mi:hover{color:#fff}
+  .menubar .mi.active{color:#fff;border-bottom-color:var(--primary);background:rgba(255,255,255,.04)}
+
+  /* ===== Sub menubar ===== */
+  .submenubar{display:flex;background:#fff;height:42px;align-items:stretch;padding:0 16px;border-bottom:1px solid var(--border-2);box-shadow:0 1px 2px rgba(0,0,0,.04)}
+  .submenubar .si{padding:0 16px;display:flex;align-items:center;cursor:pointer;font-size:13px;color:var(--text-2);border-bottom:2px solid transparent}
+  .submenubar .si:hover{color:var(--primary)}
+  .submenubar .si.active{color:var(--primary);border-bottom-color:var(--primary);font-weight:500}
+
+  /* ===== Content shell ===== */
+  .wrap{max-width:1240px;margin:20px auto;padding:0 20px}
+  .card{background:var(--surface);border:1px solid var(--border-2);border-radius:4px;box-shadow:0 2px 12px rgba(0,0,0,.06);padding:24px 30px}
+  .card h3{font-size:14px;font-weight:700;color:#363636;height:28px;line-height:28px;margin:18px 0 12px;border-bottom:1px solid var(--border-2);padding-bottom:6px;display:flex;align-items:center;gap:8px}
+  .card h3:first-child{margin-top:0}
+
+  /* ===== Form ===== */
+  .row{display:flex;align-items:center;min-height:36px;margin:10px 0;flex-wrap:wrap}
+  .row .lab{width:180px;flex-shrink:0;color:var(--text-2);font-size:14px;display:flex;align-items:center;gap:4px;padding-right:8px}
+  .row .ctrl{display:flex;align-items:center;gap:6px;flex:1}
+  .req{color:var(--danger)}
+  .hint{color:var(--text-3);font-size:12px;margin-left:6px}
+  .info-ico{display:inline-block;width:14px;height:14px;border-radius:50%;border:1px solid var(--text-3);color:var(--text-3);font-size:11px;line-height:13px;text-align:center;cursor:help;flex-shrink:0}
+  .tip{font-size:12px;color:var(--text-3);margin:-4px 0 10px 188px;line-height:1.6}
+  .tip b{color:var(--text-2)}
+
+  input[type=text],input[type=number],select{
+    height:28px;font-size:14px;color:var(--text-2);background:#fff;
+    border:1px solid var(--border);border-radius:4px;padding:0 12px;outline:none;
+    font-family:var(--font);
+  }
+  input[type=text],input[type=number]{width:160px}
+  input:focus,select:focus{border-color:var(--primary)}
+  input:disabled{background:var(--disabled);color:var(--placeholder)}
+  select{width:180px;appearance:none;-webkit-appearance:none;background:#fff url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'><path fill='%23606266' d='M6 8L2 4h8z'/></svg>") no-repeat right 10px center;padding-right:28px;cursor:pointer}
+
+  /* checkbox */
+  .cbx{display:inline-flex;align-items:center;gap:6px;cursor:pointer;font-size:14px;color:var(--text);user-select:none;margin-right:18px}
+  .cbx input{display:none}
+  .cbx .box{width:16px;height:16px;border:1px solid var(--border);border-radius:3px;background:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+  .cbx input:checked + .box{background:var(--primary);border-color:var(--primary)}
+  .cbx input:checked + .box::after{content:"";width:4px;height:8px;border:solid #fff;border-width:0 2px 2px 0;transform:rotate(45deg) translate(-1px,-1px)}
+  .cbx input:disabled + .box{background:var(--disabled);border-color:var(--border-2)}
+  .cbx input:disabled ~ .tx{color:var(--placeholder)}
+
+  /* toggle switch */
+  .sw{display:inline-flex;align-items:center;cursor:pointer}
+  .sw input{display:none}
+  .sw .track{width:40px;height:22px;background:#CDD3D9;border-radius:12px;position:relative;transition:background .25s;flex-shrink:0}
+  .sw .track::after{content:"";position:absolute;top:2px;left:2px;width:18px;height:18px;background:#fff;border-radius:50%;transition:transform .25s;box-shadow:0 1px 3px rgba(0,0,0,.2)}
+  .sw input:checked + .track{background:var(--primary)}
+  .sw input:checked + .track::after{transform:translateX(18px)}
+
+  /* buttons */
+  .actions{margin-top:24px;padding-top:16px;border-top:1px solid var(--border-2);display:flex;gap:10px}
+  .btn{height:32px;padding:0 26px;border-radius:3px;font-size:14px;cursor:pointer;border:1px solid var(--border);background:#fff;color:var(--text-2);font-family:var(--font);display:inline-flex;align-items:center}
+  .btn.primary{background:var(--primary);border-color:var(--primary);color:#fff;font-weight:500}
+  .btn.primary:hover{background:var(--primary-hover);border-color:var(--primary-hover)}
+  .btn:hover{color:var(--primary);border-color:var(--primary)}
+
+  /* info banner */
+  .banner{display:flex;gap:10px;padding:10px 14px;border-radius:4px;font-size:12px;line-height:1.6;margin:0 0 14px}
+  .banner.warn{background:#FFF8E6;border:1px solid #FFE3A3}
+  .banner.info{background:var(--primary-light);border:1px solid #B8E6FF}
+  .banner .ico{flex-shrink:0;width:16px;height:16px;border-radius:50%;font-size:12px;line-height:16px;text-align:center;color:#fff;font-weight:700}
+  .banner.warn .ico{background:var(--warning)}
+  .banner.info .ico{background:var(--primary)}
+  .banner b{color:var(--text)}
+
+  /* NEW badge */
+  .new{font-size:11px;font-weight:600;color:#fff;background:var(--success);border-radius:3px;padding:1px 6px;margin-left:4px;line-height:16px;height:16px}
+  .new-row{background:linear-gradient(transparent,transparent) ;border-left:3px solid var(--success);padding-left:10px;margin-left:-13px}
+  .new-section{position:relative}
+  .new-section::before{content:"";position:absolute;left:-13px;top:0;bottom:0;width:3px;background:var(--success);border-radius:2px}
+
+  /* collapsible */
+  .collapse{overflow:hidden;max-height:600px;transition:max-height .35s ease,opacity .25s;opacity:1}
+  .collapse.collapsed{max-height:0;opacity:0}
+
+  .field-err{display:none;color:var(--danger);font-size:12px;margin-left:6px}
+  .err input,.err select{border-color:var(--danger)}
+  .err .field-err{display:inline}
+
+  /* toast */
+  .toast{position:fixed;top:32px;left:50%;transform:translateX(-50%) translateY(-20px);background:#fff;border:1px solid var(--primary);border-left:4px solid var(--success);border-radius:4px;padding:12px 18px 12px 14px;box-shadow:0 4px 16px rgba(0,0,0,.12);display:flex;align-items:center;gap:10px;font-size:14px;opacity:0;transition:all .3s;z-index:999;pointer-events:none}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  .toast .ti{width:24px;height:24px;border-radius:50%;background:var(--success);color:#fff;font-size:14px;display:flex;align-items:center;justify-content:center;font-weight:700}
+  .toast.err{border-left-color:var(--danger)}
+  .toast.err .ti{background:var(--danger)}
+
+  .footer-note{max-width:1240px;margin:12px auto 30px;padding:0 20px;color:var(--text-3);font-size:12px;line-height:1.6}
+  .legend{display:inline-flex;gap:14px;margin-left:16px;align-items:center}
+  .legend i{width:10px;height:10px;border-radius:2px;display:inline-block;margin-right:4px;vertical-align:middle}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="logo">·<span>Network</span> Camera</div>
+  <div class="spacer"></div>
+  <div class="u">English ▾</div>
+  <div class="u"><b>admin</b> ▾</div>
+</div>
+
+<div class="menubar">
+  <div class="mi">Media</div>
+  <div class="mi active">Network</div>
+  <div class="mi">Storage</div>
+  <div class="mi">Event</div>
+  <div class="mi">System</div>
+</div>
+
+<div class="submenubar">
+  <div class="si">TCP/IP</div>
+  <div class="si">HTTP</div>
+  <div class="si active">RTSP</div>
+  <div class="si">RTSPS/SRTP</div>
+  <div class="si">UPnP</div>
+  <div class="si">DDNS</div>
+  <div class="si">P2P</div>
+  <div class="si">Email</div>
+  <div class="si">FTP</div>
+</div>
+
+<div class="wrap">
+  <div class="card">
+
+    <!-- ===== Existing RTSP config (底版, restored from device 192.168.71.141) ===== -->
+    <h3>RTSP Setting</h3>
+
+    <div class="row">
+      <div class="lab">RTSP Port</div>
+      <div class="ctrl">
+        <input type="text" value="554">
+        <span class="hint">(1~65535)</span>
+        <span class="info-ico" title="RTSP URL&#10;Primary Stream : rtsp://IP:RTSP Port/main&#10;Secondary Stream : rtsp://IP:RTSP Port/sub&#10;Tertiary Stream : rtsp://IP:RTSP Port/third&#10;Quaternary Stream : rtsp://IP:RTSP Port/fourth">i</span>
+      </div>
+    </div>
+    <div class="tip"><b>RTSP URL</b> &nbsp; Primary: rtsp://IP:554/main &nbsp; Secondary: rtsp://IP:554/sub &nbsp; Tertiary: rtsp://IP:554/third &nbsp; Quaternary: rtsp://IP:554/fourth</div>
+
+    <div class="row">
+      <div class="lab">Playback Port</div>
+      <div class="ctrl">
+        <input type="text" value="555">
+        <span class="hint">(0~65535)</span>
+        <span class="info-ico" title="Port 0 means closing playback function.">i</span>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="lab">RTP Packet</div>
+      <div class="ctrl"><select><option>Better Compatibility</option><option>Better Image Quality</option></select></div>
+    </div>
+
+    <div class="row">
+      <div class="lab">QoS DSCP(0-63)</div>
+      <div class="ctrl"><input type="text" value="0"></div>
+    </div>
+
+    <!-- ===== Existing Multicast Group (底版) ===== -->
+    <h3>Multicast Group</h3>
+    <div class="row">
+      <div class="lab">Video Stream</div>
+      <div class="ctrl"><select><option>Primary Stream</option><option>Secondary Stream</option></select></div>
+    </div>
+    <div class="row">
+      <div class="lab">Enable</div>
+      <div class="ctrl"><label class="cbx"><input type="checkbox" checked><span class="box"></span></label></div>
+    </div>
+    <div class="row">
+      <div class="lab">Multicast Group Address</div>
+      <div class="ctrl">
+        <input type="text" value="239" style="width:54px"> . <input type="text" value="6" style="width:54px"> . <input type="text" value="6" style="width:54px"> . <input type="text" value="6" style="width:54px">
+        <span class="hint">(224.0.0.0~239.255.255.255)</span>
+      </div>
+    </div>
+    <div class="row">
+      <div class="lab">Port</div>
+      <div class="ctrl"><input type="text" value="7034"><span class="hint">(1~65535)</span></div>
+    </div>
+
+    <!-- ============================================= -->
+    <!-- ===== NEW: Video Overlay section ============ -->
+    <!-- ============================================= -->
+    <h3 class="new-section">Video Overlay <span class="new">NEW</span>
+      <span class="legend" style="margin-left:auto;font-weight:400">
+        <span><i style="background:var(--success)"></i>New control</span>
+      </span>
+    </h3>
+
+    <div class="banner warn">
+      <div class="ico">!</div>
+      <div><b>Overlay content is burned into the video stream and will be recorded — it cannot be removed afterwards.</b> Use a clean stream (Stream Scope unchecked) for evidence recording / secondary analysis. Recommended baseline: Main stream clean (for NVR recording) + Sub stream overlaid (for live preview).</div>
+    </div>
+
+    <div class="row new-row">
+      <div class="lab">Enable Video Overlay</div>
+      <div class="ctrl">
+        <label class="sw"><input type="checkbox" id="ovEnable"><span class="track"></span></label>
+        <span class="hint" id="ovEnableHint">Off — RTSP stream stays clean (backward compatible)</span>
+      </div>
+    </div>
+
+    <div class="collapse collapsed" id="ovBody">
+
+      <div class="row new-row" id="rowContent">
+        <div class="lab"><span class="req">*</span>Overlay Content</div>
+        <div class="ctrl">
+          <label class="cbx"><input type="checkbox" class="ov-content" checked><span class="box"></span><span class="tx">Bounding Box</span></label>
+          <label class="cbx"><input type="checkbox" class="ov-content" id="cbTraj" checked><span class="box"></span><span class="tx">Trajectory</span></label>
+          <label class="cbx"><input type="checkbox" class="ov-content" checked><span class="box"></span><span class="tx">Label (class + confidence)</span></label>
+          <span class="field-err">At least one overlay content must be selected</span>
+        </div>
+      </div>
+
+      <div class="row new-row" id="rowClass">
+        <div class="lab"><span class="req">*</span>Detection Class</div>
+        <div class="ctrl">
+          <label class="cbx"><input type="checkbox" class="ov-class" checked><span class="box"></span><span class="tx">Person</span></label>
+          <label class="cbx"><input type="checkbox" class="ov-class" checked><span class="box"></span><span class="tx">Vehicle</span></label>
+          <label class="cbx"><input type="checkbox" class="ov-class" checked><span class="box"></span><span class="tx">Face</span></label>
+          <label class="cbx"><input type="checkbox" class="ov-class" checked><span class="box"></span><span class="tx">License Plate</span></label>
+          <span class="field-err">At least one detection class must be selected</span>
+        </div>
+      </div>
+
+      <div class="row new-row" id="rowTrajLen">
+        <div class="lab">Trajectory Length</div>
+        <div class="ctrl">
+          <input type="number" id="trajLen" value="2" min="1" max="10" style="width:80px">
+          <span class="hint">s (1-10)</span>
+          <span class="field-err">Trajectory Length must be between 1 and 10 seconds</span>
+        </div>
+      </div>
+
+      <div class="row new-row" id="rowScope">
+        <div class="lab"><span class="req">*</span>Stream Scope</div>
+        <div class="ctrl">
+          <label class="cbx"><input type="checkbox" class="ov-scope" checked><span class="box"></span><span class="tx">Main Stream</span></label>
+          <label class="cbx"><input type="checkbox" class="ov-scope" checked><span class="box"></span><span class="tx">Sub Stream</span></label>
+          <span class="field-err">At least one stream must be selected</span>
+        </div>
+      </div>
+
+      <div class="banner info">
+        <div class="ico">i</div>
+        <div>Overlay is burned into the encoded stream pre-encode (visible in live view and recordings). Any RTSP client (VLC / VMS / mobile app) sees the boxes without parsing metadata. Independent from the RTSP metadata stream (SEI) — both can coexist.</div>
+      </div>
+
+    </div><!-- /ovBody -->
+
+    <div class="actions">
+      <button class="btn primary" id="saveBtn">Save</button>
+      <button class="btn">Cancel</button>
+    </div>
+
+  </div>
+</div>
+
+<div class="footer-note">
+  Prototype for 【8.0.6-r3】【RTSP】支持 RTSP 视频流叠加 metadata 目标框与轨迹线 ·
+  Base UI restored from Milesight device 192.168.71.141 (Network → Basic → RTSP page) ·
+  <span style="color:var(--success)">Green-marked controls are new (Video Overlay section)</span> ·
+  Style baseline: design-v2.md (#16A1FE primary, 28px input, 4px radius, Element-UI form layout)
+</div>
+
+<div class="toast" id="toast"><div class="ti">✓</div><span id="toastMsg">Saved successfully</span></div>
+
+<script>
+const ovEnable=document.getElementById('ovEnable');
+const ovBody=document.getElementById('ovBody');
+const ovEnableHint=document.getElementById('ovEnableHint');
+const cbTraj=document.getElementById('cbTraj');
+const rowTrajLen=document.getElementById('rowTrajLen');
+
+function toggleBody(){
+  if(ovEnable.checked){
+    ovBody.classList.remove('collapsed');
+    ovEnableHint.textContent='On — AI bounding boxes / trajectories / labels will be burned into the RTSP stream';
+    ovEnableHint.style.color='var(--success)';
+  }else{
+    ovBody.classList.add('collapsed');
+    ovEnableHint.textContent='Off — RTSP stream stays clean (backward compatible)';
+    ovEnableHint.style.color='var(--text-3)';
+  }
+}
+ovEnable.addEventListener('change',toggleBody);
+
+cbTraj.addEventListener('change',()=>{
+  rowTrajLen.style.opacity=cbTraj.checked?'1':'0.45';
+  rowTrajLen.style.pointerEvents=cbTraj.checked?'auto':'none';
+});
+
+function clearErr(){
+  document.querySelectorAll('.err').forEach(e=>e.classList.remove('err'));
+}
+function markErr(id){document.getElementById(id).classList.add('err');}
+
+function showToast(msg,isErr){
+  const t=document.getElementById('toast');
+  document.getElementById('toastMsg').textContent=msg;
+  t.classList.toggle('err',!!isErr);
+  t.querySelector('.ti').textContent=isErr?'!':'✓';
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2600);
+}
+
+document.getElementById('saveBtn').addEventListener('click',()=>{
+  clearErr();
+  if(!ovEnable.checked){showToast('Saved successfully (Video Overlay disabled — clean stream)',false);return;}
+  let ok=true;
+  if(!document.querySelector('.ov-content:checked')){markErr('rowContent');ok=false;}
+  if(!document.querySelector('.ov-class:checked')){markErr('rowClass');ok=false;}
+  if(!document.querySelector('.ov-scope:checked')){markErr('rowScope');ok=false;}
+  const tl=parseInt(document.getElementById('trajLen').value,10);
+  if(cbTraj.checked && (isNaN(tl)||tl<1||tl>10)){markErr('rowTrajLen');ok=false;}
+  if(!ok){showToast('Please fix the highlighted fields before saving',true);return;}
+  showToast('Saved successfully — Video Overlay enabled',false);
+});
+
+// Ctrl+S shortcut
+document.addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key==='s'){e.preventDefault();document.getElementById('saveBtn').click();}});
+</script>
+</body>
+</html>
