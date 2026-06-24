@@ -142,7 +142,6 @@
           <span><span class="swatch" style="background:var(--c-person)"></span>Person</span>
           <span><span class="swatch" style="background:var(--c-vehicle)"></span>Vehicle</span>
           <span><span class="swatch" style="background:var(--c-face)"></span>Face</span>
-          <span><span class="swatch" style="background:var(--c-plate)"></span>License Plate</span>
           <span style="margin-left:auto">Hover a detection row to highlight its box · preview is illustrative</span>
         </div>
       </div>
@@ -177,7 +176,6 @@
           <label class="cbx"><input type="checkbox" class="ov-class" data-cls="person" checked><span class="bx"></span><span class="swatch" style="background:var(--c-person)"></span>Person</label>
           <label class="cbx"><input type="checkbox" class="ov-class" data-cls="vehicle" checked><span class="bx"></span><span class="swatch" style="background:var(--c-vehicle)"></span>Vehicle</label>
           <label class="cbx"><input type="checkbox" class="ov-class" data-cls="face" checked><span class="bx"></span><span class="swatch" style="background:var(--c-face)"></span>Face</label>
-          <label class="cbx"><input type="checkbox" class="ov-class" data-cls="plate" checked><span class="bx"></span><span class="swatch" style="background:var(--c-plate)"></span>License Plate</label>
           <span class="field-err">At least one class</span>
         </div></div>
         <div class="row" id="rowScope"><div class="lab"><span class="req">*</span>Stream Scope</div><div class="ctrl">
@@ -195,7 +193,7 @@
 <div class="toast" id="toast"><div class="ti">✓</div><span id="toastMsg">Saved successfully</span></div>
 
 <script>
-const cfg={enable:true,box:true,traj:true,label:true,classes:{person:true,vehicle:true,face:true,plate:true},scope:{main:true,sub:true},trajLen:2};
+const cfg={enable:true,box:true,traj:true,label:true,classes:{person:true,vehicle:true,face:true},scope:{main:true,sub:true},trajLen:2};
 const COLOR={person:'#21BF73',vehicle:'#16A1FE',face:'#FFB400',plate:'#A855F7'};
 const LABEL={person:'Person',vehicle:'Vehicle',face:'Face',plate:'License Plate'};
 const W=540,H=304;
