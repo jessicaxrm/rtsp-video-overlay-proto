@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Milesight — Video Overlay Prototype (live preview)</title>
+<title>Milesight — Video Overlay Prototype (single live preview)</title>
 <style>
   :root{
     --primary:#16A1FE; --primary-hover:#40B9FF; --primary-light:#E8F7FF;
@@ -14,14 +14,9 @@
   }
   *{box-sizing:border-box;margin:0;padding:0}
   body{font-family:var(--font);font-size:14px;color:var(--text);background:var(--page);}
-
-  /* ===== shell ===== */
   .topbar{height:48px;background:#262B33;color:#fff;display:flex;align-items:center;padding:0 20px;gap:8px}
-  .topbar .logo{font-weight:700}
-  .topbar .logo span{color:var(--primary)}
-  .topbar .spacer{flex:1}
-  .topbar .u{color:#cfd3da}
-  .topbar .u b{color:#fff;font-weight:500}
+  .topbar .logo{font-weight:700}.topbar .logo span{color:var(--primary)}
+  .topbar .spacer{flex:1}.topbar .u{color:#cfd3da}.topbar .u b{color:#fff;font-weight:500}
   .menubar{display:flex;background:#3A414B;color:#cfd3da;height:40px;align-items:stretch;padding:0 8px}
   .menubar .mi{padding:0 18px;display:flex;align-items:center;cursor:pointer;border-bottom:3px solid transparent}
   .menubar .mi:hover{color:#fff}
@@ -37,404 +32,302 @@
   .card h3{font-size:14px;font-weight:700;color:#363636;height:28px;line-height:28px;margin:0 0 14px;display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--border-2);padding-bottom:8px}
   .new{font-size:11px;font-weight:600;color:#fff;background:var(--success);border-radius:3px;padding:1px 6px;line-height:16px;height:16px}
 
-  /* ===== preview ===== */
-  .panes{display:flex;gap:14px;flex-wrap:wrap}
-  .pane{flex:1;min-width:300px}
-  .pane .ph{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
-  .pane .ptitle{font-size:13px;font-weight:600;color:var(--text-2);display:flex;align-items:center;gap:6px}
-  .badge{font-size:11px;font-weight:600;border-radius:10px;padding:2px 8px;line-height:14px}
-  .badge.clean{background:#E6E9EC;color:var(--text-3)}
-  .badge.over{background:var(--primary-light);color:var(--primary)}
-  .dot{width:8px;height:8px;border-radius:50%;display:inline-block}
-  .dot.main{background:var(--c-vehicle)}
-  .dot.sub{background:var(--c-person)}
-
-  .stage{position:relative;width:100%;aspect-ratio:540/304;background:linear-gradient(to bottom,#5a6b7b 0%,#7a8a99 46%,#43474c 46%,#33373b 100%);border-radius:4px;overflow:hidden;border:1px solid var(--border-2)}
-  .stage .road{position:absolute;left:0;right:0;top:46%;height:30%;background:#2c3035;box-shadow:inset 0 0 0 1px rgba(255,255,255,.03)}
-  .stage .lane{position:absolute;left:0;right:0;top:60%;height:2px;background:repeating-linear-gradient(to right,#c8c8c8 0 14px,transparent 14px 28px);opacity:.5}
-  .stage .bldg{position:absolute;left:6%;bottom:54%;width:22%;height:30%;background:#4a5260;border-radius:2px 2px 0 0;opacity:.7}
-  .stage .bldg2{position:absolute;left:72%;bottom:54%;width:18%;height:24%;background:#525a68;border-radius:2px 2px 0 0;opacity:.6}
+  /* preview layout */
+  .preview-row{display:flex;gap:14px;flex-wrap:wrap;align-items:flex-start}
+  .preview-wrap{flex:2;min-width:340px}
+  .det-panel{flex:1;min-width:240px;max-width:340px}
+  .stage{position:relative;width:100%;aspect-ratio:16/9;background:linear-gradient(to bottom,#5a6b7b 0%,#7a8a99 46%,#43474c 46%,#33373b 100%);border-radius:4px;overflow:hidden;border:1px solid var(--border-2)}
+  .stage .road{position:absolute;left:0;right:0;top:46%;height:32%;background:#2c3035}
+  .stage .lane{position:absolute;left:0;right:0;top:62%;height:2px;background:repeating-linear-gradient(to right,#c8c8c8 0 16px,transparent 16px 32px);opacity:.45}
+  .stage .bldg{position:absolute;left:5%;bottom:54%;width:20%;height:32%;background:#4a5260;border-radius:2px 2px 0 0;opacity:.7}
+  .stage .bldg2{position:absolute;left:74%;bottom:54%;width:18%;height:26%;background:#525a68;border-radius:2px 2px 0 0;opacity:.6}
+  .stage .tree{position:absolute;left:38%;bottom:50%;width:26px;height:26px;border-radius:50%;background:#2f4a3a;opacity:.6}
   .stage svg.trails{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
   .stage .boxes{position:absolute;inset:0;pointer-events:none}
-
-  /* scene objects (always visible — real video content) */
-  .obj{position:absolute;width:0;height:0}
+  .stage .vbadge{position:absolute;top:8px;left:8px;font-size:11px;font-weight:600;padding:3px 9px;border-radius:3px;color:#fff;background:rgba(0,0,0,.55);backdrop-filter:blur(2px)}
+  .stage .vbadge.over{background:rgba(33,191,115,.85)}
+  .obj{position:absolute}
   .obj .blob{position:absolute;transform:translate(-50%,-50%)}
-  .obj.person .blob{width:14px;height:22px}
-  .obj.person .blob::before{content:"";position:absolute;left:3px;top:0;width:8px;height:8px;border-radius:50%;background:#222a30}
-  .obj.person .blob::after{content:"";position:absolute;left:2px;top:8px;width:10px;height:14px;border-radius:4px 4px 3px 3px;background:#2a3238}
-  .obj.vehicle .blob{width:30px;height:16px;border-radius:4px;background:#2a3238;border:1px solid #1a2228}
-  .obj.vehicle .blob::after{content:"";position:absolute;left:6px;top:2px;width:18px;height:5px;background:#3a4248;border-radius:2px}
+  .obj.person .blob{width:16px;height:24px}
+  .obj.person .blob::before{content:"";position:absolute;left:4px;top:0;width:8px;height:8px;border-radius:50%;background:#222a30}
+  .obj.person .blob::after{content:"";position:absolute;left:3px;top:9px;width:10px;height:15px;border-radius:4px 4px 3px 3px;background:#2a3238}
+  .obj.vehicle .blob{width:34px;height:18px;border-radius:5px;background:#2a3238;border:1px solid #1a2228}
+  .obj.vehicle .blob::after{content:"";position:absolute;left:7px;top:2px;width:20px;height:6px;background:#3a4248;border-radius:2px}
+  .obj.face .blob{width:20px;height:20px;border-radius:50%;background:radial-gradient(circle,#3a4250,#222a30)}
+  .box{position:absolute;transform:translate(-50%,-50%);border:2px solid;border-radius:2px;transition:box-shadow .15s}
+  .box.hl{box-shadow:0 0 0 2px #fff,0 0 10px 2px rgba(255,255,255,.6)}
+  .lbl{position:absolute;transform:translate(-50%,0);font-size:10px;font-weight:600;color:#fff;padding:1px 5px;border-radius:2px;white-space:nowrap;line-height:14px}
 
-  /* overlay elements (AI detection — toggleable) */
-  .box{position:absolute;transform:translate(-50%,-50%);border:2px solid;border-radius:2px}
-  .lbl{position:absolute;transform:translate(-50%,0);font-size:10px;font-weight:600;color:#fff;padding:1px 5px;border-radius:2px;white-space:nowrap;line-height:14px;font-family:var(--font)}
+  /* detection list (AXIS-style) */
+  .det-panel .det-hd{font-size:13px;font-weight:600;color:var(--text-2);margin-bottom:8px;display:flex;align-items:center;justify-content:space-between}
+  .det-panel .cnt{font-size:11px;color:var(--text-3);font-weight:400}
+  .dtable{width:100%;border:1px solid var(--border-2);border-radius:4px;border-collapse:collapse;font-size:12px;background:#fff}
+  .dtable th{background:#f4f6f8;color:var(--text-3);font-weight:600;text-align:left;padding:7px 8px;border-bottom:1px solid var(--border-2);font-size:11px}
+  .dtable td{padding:6px 8px;border-bottom:1px solid var(--border-2);color:var(--text-2)}
+  .dtable tr:last-child td{border-bottom:none}
+  .dtable tr{cursor:pointer;transition:background .12s}
+  .dtable tr:hover{background:var(--primary-light)}
+  .dtable tr.hl{background:var(--primary-light)}
+  .dtable .sw{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:5px;vertical-align:middle}
+  .dtable .id{font-family:Consolas,monospace;color:var(--text-3);font-size:11px}
+  .dtable .conf{font-weight:600}
+  .dtable .hide-cb{width:13px;height:13px}
+  .det-empty{padding:18px 10px;text-align:center;color:var(--placeholder);font-size:12px}
 
-  /* ===== form ===== */
   .row{display:flex;align-items:center;min-height:36px;margin:10px 0;flex-wrap:wrap}
   .row .lab{width:170px;flex-shrink:0;color:var(--text-2);font-size:14px;padding-right:8px;display:flex;align-items:center;gap:4px}
   .row .ctrl{display:flex;align-items:center;gap:6px;flex:1;flex-wrap:wrap}
-  .req{color:var(--danger)}
-  .hint{color:var(--text-3);font-size:12px;margin-left:6px}
+  .req{color:var(--danger)}.hint{color:var(--text-3);font-size:12px;margin-left:6px}
   input[type=text],input[type=number]{height:28px;font-size:14px;color:var(--text-2);background:#fff;border:1px solid var(--border);border-radius:4px;padding:0 12px;outline:none;font-family:var(--font);width:160px}
-  input:focus{border-color:var(--primary)}
-  input[type=number]{width:80px}
-
+  input:focus{border-color:var(--primary)}input[type=number]{width:80px}
   .cbx{display:inline-flex;align-items:center;gap:6px;cursor:pointer;font-size:14px;color:var(--text);user-select:none;margin-right:18px}
   .cbx input{display:none}
   .cbx .bx{width:16px;height:16px;border:1px solid var(--border);border-radius:3px;background:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0}
   .cbx input:checked + .bx{background:var(--primary);border-color:var(--primary)}
   .cbx input:checked + .bx::after{content:"";width:4px;height:8px;border:solid #fff;border-width:0 2px 2px 0;transform:rotate(45deg) translate(-1px,-1px)}
-  .cbx.disabled{opacity:.45;pointer-events:none}
-  .swatch{width:10px;height:10px;border-radius:2px;display:inline-block;margin-right:2px}
-
-  .sw{display:inline-flex;align-items:center;cursor:pointer}
-  .sw input{display:none}
-  .sw .track{width:40px;height:22px;background:#CDD3D9;border-radius:12px;position:relative;transition:background .25s}
-  .sw .track::after{content:"";position:absolute;top:2px;left:2px;width:18px;height:18px;background:#fff;border-radius:50%;transition:transform .25s;box-shadow:0 1px 3px rgba(0,0,0,.2)}
-  .sw input:checked + .track{background:var(--primary)}
-  .sw input:checked + .track::after{transform:translateX(18px)}
-
+  .sw2{display:inline-flex;align-items:center;cursor:pointer}
+  .sw2 input{display:none}
+  .sw2 .track{width:40px;height:22px;background:#CDD3D9;border-radius:12px;position:relative;transition:background .25s}
+  .sw2 .track::after{content:"";position:absolute;top:2px;left:2px;width:18px;height:18px;background:#fff;border-radius:50%;transition:transform .25s;box-shadow:0 1px 3px rgba(0,0,0,.2)}
+  .sw2 input:checked + .track{background:var(--primary)}
+  .sw2 input:checked + .track::after{transform:translateX(18px)}
   .banner{display:flex;gap:10px;padding:10px 14px;border-radius:4px;font-size:12px;line-height:1.6;margin:0 0 14px}
   .banner.warn{background:#FFF8E6;border:1px solid #FFE3A3}
   .banner.info{background:var(--primary-light);border:1px solid #B8E6FF}
   .banner .ico{flex-shrink:0;width:16px;height:16px;border-radius:50%;font-size:12px;line-height:16px;text-align:center;color:#fff;font-weight:700}
-  .banner.warn .ico{background:var(--warning)}
-  .banner.info .ico{background:var(--primary)}
+  .banner.warn .ico{background:var(--warning)}.banner.info .ico{background:var(--primary)}
   .banner b{color:var(--text)}
-
   .actions{margin-top:18px;padding-top:14px;border-top:1px solid var(--border-2);display:flex;gap:10px}
   .btn{height:32px;padding:0 26px;border-radius:3px;font-size:14px;cursor:pointer;border:1px solid var(--border);background:#fff;color:var(--text-2);font-family:var(--font);display:inline-flex;align-items:center}
   .btn.primary{background:var(--primary);border-color:var(--primary);color:#fff;font-weight:500}
   .btn.primary:hover{background:var(--primary-hover)}
   .field-err{display:none;color:var(--danger);font-size:12px;margin-left:6px}
   .err .field-err{display:inline}
-
   .toast{position:fixed;top:32px;left:50%;transform:translateX(-50%) translateY(-20px);background:#fff;border:1px solid var(--primary);border-left:4px solid var(--success);border-radius:4px;padding:12px 18px 12px 14px;box-shadow:0 4px 16px rgba(0,0,0,.12);display:flex;align-items:center;gap:10px;font-size:14px;opacity:0;transition:all .3s;z-index:999;pointer-events:none}
   .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
   .toast .ti{width:24px;height:24px;border-radius:50%;background:var(--success);color:#fff;font-size:14px;display:flex;align-items:center;justify-content:center;font-weight:700}
-  .toast.err{border-left-color:var(--danger)}
-  .toast.err .ti{background:var(--danger)}
-
+  .toast.err{border-left-color:var(--danger)}.toast.err .ti{background:var(--danger)}
   .legend{font-size:11px;color:var(--text-3);margin-top:8px;display:flex;gap:14px;flex-wrap:wrap}
   .legend span{display:inline-flex;align-items:center;gap:4px}
+  .swatch{width:10px;height:10px;border-radius:2px;display:inline-block}
   .note{font-size:12px;color:var(--text-3);margin-top:8px;line-height:1.5}
-  .preview-state{font-size:12px;color:var(--text-3);margin-bottom:8px}
-  .preview-state b{color:var(--text-2)}
-  .config-grid{display:flex;gap:24px;flex-wrap:wrap}
-  .config-grid .col{flex:1;min-width:260px}
+  .config-grid{display:flex;gap:24px;flex-wrap:wrap}.config-grid .col{flex:1;min-width:260px}
 </style>
 </head>
 <body>
-
-<div class="topbar">
-  <div class="logo">·<span>Network</span> Camera</div>
-  <div class="spacer"></div>
-  <div class="u">English ▾</div>
-  <div class="u"><b>admin</b> ▾</div>
-</div>
-
-<div class="menubar">
-  <div class="mi">Media</div>
-  <div class="mi active">Network</div>
-  <div class="mi">Storage</div>
-  <div class="mi">Event</div>
-  <div class="mi">System</div>
-</div>
-
+<div class="topbar"><div class="logo">·<span>Network</span> Camera</div><div class="spacer"></div><div class="u">English ▾</div><div class="u"><b>admin</b> ▾</div></div>
+<div class="menubar"><div class="mi">Media</div><div class="mi active">Network</div><div class="mi">Storage</div><div class="mi">Event</div><div class="mi">System</div></div>
 <div class="submenubar">
-  <div class="si">TCP/IP</div>
-  <div class="si">HTTP</div>
-  <div class="si">RTSP</div>
+  <div class="si">TCP/IP</div><div class="si">HTTP</div><div class="si">RTSP</div>
   <div class="si active">Video Overlay<span class="newdot"></span></div>
-  <div class="si">RTSPS/SRTP</div>
-  <div class="si">UPnP</div>
-  <div class="si">DDNS</div>
-  <div class="si">P2P</div>
-  <div class="si">Email</div>
-  <div class="si">FTP</div>
+  <div class="si">RTSPS/SRTP</div><div class="si">UPnP</div><div class="si">DDNS</div><div class="si">P2P</div><div class="si">Email</div><div class="si">FTP</div>
 </div>
 
 <div class="wrap">
-
-  <!-- ===== Live Preview ===== -->
+  <!-- ===== Live Preview (single pane) + detection list ===== -->
   <div class="card">
     <h3>Live Preview <span class="new">NEW</span>
-      <span style="margin-left:auto;font-weight:400;font-size:12px;color:var(--text-3)">Toggle the configuration below — preview updates in real time</span>
+      <span style="margin-left:auto;font-weight:400;font-size:12px;color:var(--text-3)">Toggle the configuration below — preview &amp; detection list update in real time</span>
     </h3>
-    <div class="preview-state" id="stateLine">State: <b id="stateText">Video Overlay disabled — streams are clean</b></div>
-
-    <div class="panes">
-      <!-- Main stream pane -->
-      <div class="pane">
-        <div class="ph">
-          <div class="ptitle"><span class="dot main"></span>Main Stream</div>
-          <div class="badge clean" id="badge-main">Clean</div>
-        </div>
-        <div class="stage" id="stage-main">
-          <div class="bldg"></div><div class="bldg2"></div>
+    <div class="preview-row">
+      <div class="preview-wrap">
+        <div class="stage" id="stage">
+          <div class="bldg"></div><div class="bldg2"></div><div class="tree"></div>
           <div class="road"></div><div class="lane"></div>
-          <svg class="trails" id="trails-main" viewBox="0 0 540 304" preserveAspectRatio="none"></svg>
-          <div class="boxes" id="boxes-main"></div>
+          <div class="vbadge" id="vbadge">Clean Stream</div>
+          <svg class="trails" id="trails" viewBox="0 0 540 304" preserveAspectRatio="none"></svg>
+          <div class="boxes" id="boxes"></div>
+        </div>
+        <div class="legend">
+          <span><span class="swatch" style="background:var(--c-person)"></span>Person</span>
+          <span><span class="swatch" style="background:var(--c-vehicle)"></span>Vehicle</span>
+          <span><span class="swatch" style="background:var(--c-face)"></span>Face</span>
+          <span><span class="swatch" style="background:var(--c-plate)"></span>License Plate</span>
+          <span style="margin-left:auto">Hover a detection row to highlight its box · preview is illustrative</span>
         </div>
       </div>
-      <!-- Sub stream pane -->
-      <div class="pane">
-        <div class="ph">
-          <div class="ptitle"><span class="dot sub"></span>Sub Stream</div>
-          <div class="badge clean" id="badge-sub">Clean</div>
-        </div>
-        <div class="stage" id="stage-sub">
-          <div class="bldg"></div><div class="bldg2"></div>
-          <div class="road"></div><div class="lane"></div>
-          <svg class="trails" id="trails-sub" viewBox="0 0 540 304" preserveAspectRatio="none"></svg>
-          <div class="boxes" id="boxes-sub"></div>
-        </div>
+      <div class="det-panel">
+        <div class="det-hd">Detection List <span class="cnt" id="detCnt">0 objects</span></div>
+        <table class="dtable" id="dtable">
+          <thead><tr><th style="width:18px"></th><th>ID</th><th>Type</th><th>Conf.</th><th style="width:30px">Hide</th></tr></thead>
+          <tbody id="dtbody"></tbody>
+        </table>
+        <div class="det-empty" id="detEmpty" style="display:none">No objects detected — enable Video Overlay and select detection classes</div>
       </div>
-    </div>
-    <div class="legend">
-      <span><span class="swatch" style="background:var(--c-person)"></span>Person</span>
-      <span><span class="swatch" style="background:var(--c-vehicle)"></span>Vehicle</span>
-      <span><span class="swatch" style="background:var(--c-face)"></span>Face</span>
-      <span><span class="swatch" style="background:var(--c-plate)"></span>License Plate</span>
-      <span style="margin-left:auto">Preview is illustrative — actual overlay is rendered by the device encoder into the RTSP stream</span>
     </div>
   </div>
 
   <!-- ===== Configuration ===== -->
   <div class="card">
     <h3>Video Overlay Configuration <span class="new">NEW</span></h3>
-    <div class="banner warn">
-      <div class="ico">!</div>
-      <div><b>Overlay content is burned into the video stream and will be recorded — it cannot be removed afterwards.</b> Use a clean stream (uncheck Stream Scope) for evidence recording / secondary analysis. Recommended baseline: Main stream clean (NVR recording) + Sub stream overlaid (live preview).</div>
-    </div>
-
+    <div class="banner warn"><div class="ico">!</div><div><b>Overlay content is burned into the video stream and will be recorded — it cannot be removed afterwards.</b> Use a clean stream (uncheck Stream Scope) for evidence recording / secondary analysis.</div></div>
     <div class="config-grid">
       <div class="col">
-        <div class="row">
-          <div class="lab">Enable Video Overlay</div>
-          <div class="ctrl">
-            <label class="sw"><input type="checkbox" id="ovEnable" checked><span class="track"></span></label>
-            <span class="hint" id="ovEnableHint">On — boxes/trajectories/labels burned into selected streams</span>
-          </div>
-        </div>
-
-        <div class="row" id="rowContent">
-          <div class="lab"><span class="req">*</span>Overlay Content</div>
-          <div class="ctrl">
-            <label class="cbx"><input type="checkbox" class="ov-content" id="cbBox" checked><span class="bx"></span><span class="tx">Bounding Box</span></label>
-            <label class="cbx"><input type="checkbox" class="ov-content" id="cbTraj" checked><span class="bx"></span><span class="tx">Trajectory</span></label>
-            <label class="cbx"><input type="checkbox" class="ov-content" id="cbLabel" checked><span class="bx"></span><span class="tx">Label</span></label>
-            <span class="field-err">At least one overlay content must be selected</span>
-          </div>
-        </div>
-
-        <div class="row" id="rowTrajLen">
-          <div class="lab">Trajectory Length</div>
-          <div class="ctrl">
-            <input type="number" id="trajLen" value="2" min="1" max="10">
-            <span class="hint">s (1-10)</span>
-            <span class="field-err">must be 1-10</span>
-          </div>
-        </div>
+        <div class="row"><div class="lab">Enable Video Overlay</div><div class="ctrl"><label class="sw2"><input type="checkbox" id="ovEnable" checked><span class="track"></span></label><span class="hint" id="ovEnableHint">On</span></div></div>
+        <div class="row" id="rowContent"><div class="lab"><span class="req">*</span>Overlay Content</div><div class="ctrl">
+          <label class="cbx"><input type="checkbox" class="ov-content" id="cbBox" checked><span class="bx"></span>Bounding Box</label>
+          <label class="cbx"><input type="checkbox" class="ov-content" id="cbTraj" checked><span class="bx"></span>Trajectory</label>
+          <label class="cbx"><input type="checkbox" class="ov-content" id="cbLabel" checked><span class="bx"></span>Label</label>
+          <span class="field-err">At least one overlay content must be selected</span>
+        </div></div>
+        <div class="row" id="rowTrajLen"><div class="lab">Trajectory Length</div><div class="ctrl"><input type="number" id="trajLen" value="2" min="1" max="10"><span class="hint">s (1-10)</span><span class="field-err">must be 1-10</span></div></div>
       </div>
-
       <div class="col">
-        <div class="row" id="rowClass">
-          <div class="lab"><span class="req">*</span>Detection Class</div>
-          <div class="ctrl">
-            <label class="cbx"><input type="checkbox" class="ov-class" data-cls="person" checked><span class="bx"></span><span class="swatch" style="background:var(--c-person)"></span><span class="tx">Person</span></label>
-            <label class="cbx"><input type="checkbox" class="ov-class" data-cls="vehicle" checked><span class="bx"></span><span class="swatch" style="background:var(--c-vehicle)"></span><span class="tx">Vehicle</span></label>
-            <label class="cbx"><input type="checkbox" class="ov-class" data-cls="face" checked><span class="bx"></span><span class="swatch" style="background:var(--c-face)"></span><span class="tx">Face</span></label>
-            <label class="cbx"><input type="checkbox" class="ov-class" data-cls="plate" checked><span class="bx"></span><span class="swatch" style="background:var(--c-plate)"></span><span class="tx">License Plate</span></label>
-            <span class="field-err">At least one class</span>
-          </div>
-        </div>
-
-        <div class="row" id="rowScope">
-          <div class="lab"><span class="req">*</span>Stream Scope</div>
-          <div class="ctrl">
-            <label class="cbx"><input type="checkbox" class="ov-scope" data-stream="main" checked><span class="bx"></span><span class="tx">Main Stream</span></label>
-            <label class="cbx"><input type="checkbox" class="ov-scope" data-stream="sub" checked><span class="bx"></span><span class="tx">Sub Stream</span></label>
-            <span class="field-err">At least one stream</span>
-          </div>
-        </div>
-        <div class="note">Main + Sub independently decide whether the overlay is burned in. Uncheck Main to keep the recording/evidence stream clean; keep Sub overlaid for live preview on players that can't render metadata.</div>
+        <div class="row" id="rowClass"><div class="lab"><span class="req">*</span>Detection Class</div><div class="ctrl">
+          <label class="cbx"><input type="checkbox" class="ov-class" data-cls="person" checked><span class="bx"></span><span class="swatch" style="background:var(--c-person)"></span>Person</label>
+          <label class="cbx"><input type="checkbox" class="ov-class" data-cls="vehicle" checked><span class="bx"></span><span class="swatch" style="background:var(--c-vehicle)"></span>Vehicle</label>
+          <label class="cbx"><input type="checkbox" class="ov-class" data-cls="face" checked><span class="bx"></span><span class="swatch" style="background:var(--c-face)"></span>Face</label>
+          <label class="cbx"><input type="checkbox" class="ov-class" data-cls="plate" checked><span class="bx"></span><span class="swatch" style="background:var(--c-plate)"></span>License Plate</label>
+          <span class="field-err">At least one class</span>
+        </div></div>
+        <div class="row" id="rowScope"><div class="lab"><span class="req">*</span>Stream Scope</div><div class="ctrl">
+          <label class="cbx"><input type="checkbox" class="ov-scope" data-stream="main" checked><span class="bx"></span>Main Stream</label>
+          <label class="cbx"><input type="checkbox" class="ov-scope" data-stream="sub" checked><span class="bx"></span>Sub Stream</label>
+          <span class="field-err">At least one stream</span>
+        </div></div>
+        <div class="note">Stream Scope decides which encoded streams carry the burn-in. The preview above illustrates the overlay appearance on a single stream.</div>
       </div>
     </div>
-
-    <div class="actions">
-      <button class="btn primary" id="saveBtn">Save</button>
-      <button class="btn">Cancel</button>
-    </div>
+    <div class="actions"><button class="btn primary" id="saveBtn">Save</button><button class="btn">Cancel</button></div>
   </div>
-
-  <div class="note" style="text-align:center">Prototype for 【8.0.6-r3】【RTSP】支持 RTSP 视频流叠加 metadata 目标框与轨迹线 · Video Overlay is a dedicated page (Network → Basic → Video Overlay), separate from RTSP config · Style: design-v2.md (#16A1FE)</div>
+  <div class="note" style="text-align:center">Prototype for 【8.0.6-r3】RTSP Video Overlay · Network → Basic → Video Overlay (dedicated page) · Detection list inspired by AXIS Metadata Visualization</div>
 </div>
-
 <div class="toast" id="toast"><div class="ti">✓</div><span id="toastMsg">Saved successfully</span></div>
 
 <script>
-/* ============ config state ============ */
-const cfg = {
-  enable:true,
-  box:true, traj:true, label:true,
-  classes:{person:true,vehicle:true,face:true,plate:true},
-  scope:{main:true,sub:true},
-  trajLen:2
-};
-const CLASS_COLOR={person:'#21BF73',vehicle:'#16A1FE',face:'#FFB400',plate:'#A855F7'};
-const CLASS_LABEL={person:'Person',vehicle:'Vehicle',face:'Face',plate:'License Plate'};
-
-/* ============ simulated scene (shared by both panes) ============ */
+const cfg={enable:true,box:true,traj:true,label:true,classes:{person:true,vehicle:true,face:true,plate:true},scope:{main:true,sub:true},trajLen:2};
+const COLOR={person:'#21BF73',vehicle:'#16A1FE',face:'#FFB400',plate:'#A855F7'};
+const LABEL={person:'Person',vehicle:'Vehicle',face:'Face',plate:'License Plate'};
 const W=540,H=304;
+// targets with AXIS-style hex IDs
 const targets=[
-  {id:'p1',cls:'person', x:80, y:200, vx:0.55, vy:0.18, w:16, h:24, hist:[]},
-  {id:'p2',cls:'person', x:300,y:170, vx:-0.42,vy:0.22, w:16, h:24, hist:[]},
-  {id:'v1',cls:'vehicle',x:40, y:135, vx:1.15, vy:0.0, w:34, h:20, hist:[]},
-  {id:'f1',cls:'face',   x:470,y:95,  vx:0.0, vy:0.0, w:22, h:22, hist:[]}  // static (face on a subject)
+  {id:'p1',hex:'8e1cc843',cls:'person', x:70, y:205, vx:0.5, vy:0.16, w:18, h:26, hist:[], hide:false},
+  {id:'p2',hex:'a4f02d11',cls:'person', x:300,y:175, vx:-0.4,vy:0.2, w:18, h:26, hist:[], hide:false},
+  {id:'v1',hex:'dcd6dd00',cls:'vehicle',x:30, y:138, vx:1.1, vy:0.0, w:38, h:22, hist:[], hide:false},
+  {id:'v2',hex:'7b22aa0e',cls:'vehicle',x:480,y:150, vx:-0.9,vy:0.0, w:38, h:22, hist:[], hide:false},
+  {id:'f1',hex:'c901fe55',cls:'face',   x:460,y:96,  vx:0.0, vy:0.0, w:22, h:22, hist:[], hide:false}
 ];
-const MAXHIST=300; // points ~10s @30fps
+const MAXHIST=300;
+const boxesEl=document.getElementById('boxes');
+const trailsEl=document.getElementById('trails');
+const vbadge=document.getElementById('vbadge');
+const dtbody=document.getElementById('dtbody');
+const detEmpty=document.getElementById('detEmpty');
+const detCnt=document.getElementById('detCnt');
 
-/* ============ DOM refs per pane ============ */
-const panes={
-  main:{boxes:document.getElementById('boxes-main'), trails:document.getElementById('trails-main'), badge:document.getElementById('badge-main')},
-  sub: {boxes:document.getElementById('boxes-sub'),  trails:document.getElementById('trails-sub'),  badge:document.getElementById('badge-sub')}
-};
-// create blob elements once per pane (scene objects always visible)
-Object.values(panes).forEach(p=>{
-  p.blobs={};
-  targets.forEach(t=>{
-    const wrap=document.createElement('div'); wrap.className='obj '+t.cls; wrap.style.position='absolute';
-    const blob=document.createElement('div'); blob.className='blob'; wrap.appendChild(blob);
-    p.boxes.appendChild(wrap);
-    p.blobs[t.id]={wrap,blob};
-    // overlay box + label
-    const box=document.createElement('div'); box.className='box'; box.style.display='none'; p.boxes.appendChild(box); p.blobs[t.id].box=box;
-    const lbl=document.createElement('div'); lbl.className='lbl'; lbl.style.display='none'; p.boxes.appendChild(lbl); p.blobs[t.id].lbl=lbl;
-  });
+// build blob/box/label per target
+const refs={};
+targets.forEach(t=>{
+  const wrap=document.createElement('div');wrap.className='obj '+t.cls;
+  const blob=document.createElement('div');blob.className='blob';wrap.appendChild(blob);
+  const box=document.createElement('div');box.className='box';box.style.display='none';
+  const lbl=document.createElement('div');lbl.className='lbl';lbl.style.display='none';
+  boxesEl.appendChild(wrap);boxesEl.appendChild(box);boxesEl.appendChild(lbl);
+  refs[t.id]={wrap,blob,box,lbl};
 });
 
-/* ============ simulation + render ============ */
-let frame=0;
+let frame=0, hoverId=null;
 function step(){
   frame++;
-  // update positions
   targets.forEach(t=>{
-    t.x+=t.vx; t.y+=t.vy;
-    if(t.x<t.w/2||t.x>W-t.w/2){t.vx*=-1; t.x=Math.max(t.w/2,Math.min(W-t.w/2,t.x));}
-    if(t.y<t.h/2||t.y>H-t.h/2){t.vy*=-1; t.y=Math.max(t.h/2,Math.min(H-t.h/2,t.y));}
-    t.hist.push([t.x,t.y]); if(t.hist.length>MAXHIST) t.hist.shift();
+    t.x+=t.vx;t.y+=t.vy;
+    if(t.x<t.w/2||t.x>W-t.w/2){t.vx*=-1;t.x=Math.max(t.w/2,Math.min(W-t.w/2,t.x));}
+    if(t.y<t.h/2||t.y>H-t.h/2){t.vy*=-1;t.y=Math.max(t.h/2,Math.min(H-t.h/2,t.y));}
+    t.hist.push([t.x,t.y]);if(t.hist.length>MAXHIST)t.hist.shift();
   });
-  renderPanes();
+  render();
   requestAnimationFrame(step);
 }
-
-function renderPanes(){
-  ['main','sub'].forEach(stream=>{
-    const p=panes[stream];
-    const overlayOn = cfg.enable && cfg.scope[stream];
-    // badge
-    if(overlayOn){p.badge.textContent='Overlaid';p.badge.className='badge over';}
-    else{p.badge.textContent='Clean';p.badge.className='badge clean';}
-    // trails svg
-    p.trails.innerHTML='';
-    targets.forEach(t=>{
-      const blob=p.blobs[t.id];
-      // position blob (always visible)
-      blob.wrap.style.left=(t.x/W*100)+'%';
-      blob.wrap.style.top=(t.y/H*100)+'%';
-      // overlay visibility
-      const show = overlayOn && cfg.classes[t.cls];
-      const showBox = show && cfg.box;
-      const showLbl = show && cfg.label;
-      const showTraj = show && cfg.traj;
-      // box
-      if(showBox){
-        blob.box.style.display='block';
-        blob.box.style.left=(t.x/W*100)+'%';
-        blob.box.style.top=(t.y/H*100)+'%';
-        blob.box.style.width=(t.w/W*100)+'%';
-        blob.box.style.height=(t.h/H*100)+'%';
-        blob.box.style.borderColor=CLASS_COLOR[t.cls];
-        blob.box.style.boxShadow='0 0 0 1px rgba(0,0,0,.25)';
-      } else blob.box.style.display='none';
-      // label
-      if(showLbl){
-        blob.lbl.style.display='block';
-        blob.lbl.style.left=(t.x/W*100)+'%';
-        blob.lbl.style.top=((t.y - t.h/2 - 4)/H*100)+'%';
-        blob.lbl.style.background=CLASS_COLOR[t.cls];
-        blob.lbl.textContent=CLASS_LABEL[t.cls]+' '+ (88+ (frame*7+t.id.charCodeAt(0))%11) +'%' ;
-      } else blob.lbl.style.display='none';
-      // trajectory
-      if(showTraj && t.hist.length>2 && (t.vx||t.vy)){
-        const pts=t.hist.length;
-        const keep=Math.min(pts, Math.round(cfg.trajLen*30));
-        const seg=Math.max(2, Math.min(keep, 26)); // subsample for perf
-        const slice=t.hist.slice(-keep);
-        const step2=Math.max(1, Math.floor(slice.length/seg));
-        let pathStr='';
-        const NS='http://www.w3.org/2000/svg';
-        for(let i=0;i<slice.length;i+=step2){
-          const [x,y]=slice[i];
-          // convert to viewBox coords (already 540x304)
-          pathStr += (i===0?'M':'L') + x.toFixed(1)+' '+y.toFixed(1)+' ';
-        }
-        // fading trail via multiple segments
-        const col=CLASS_COLOR[t.cls];
-        for(let i=step2;i<slice.length;i+=step2){
-          const a=slice[i-step2], b=slice[i]||slice[slice.length-1];
-          const op=0.15 + 0.5*(i/slice.length);
-          const line=document.createElementNS(NS,'line');
-          line.setAttribute('x1',a[0]);line.setAttribute('y1',a[1]);
-          line.setAttribute('x2',b[0]);line.setAttribute('y2',b[1]);
-          line.setAttribute('stroke',col);line.setAttribute('stroke-width',2);
-          line.setAttribute('stroke-linecap','round');
-          line.setAttribute('opacity',op);
-          p.trails.appendChild(line);
-        }
+function render(){
+  const on=cfg.enable;
+  // badge
+  if(on){vbadge.textContent='Overlaid Stream';vbadge.className='vbadge over';}
+  else{vbadge.textContent='Clean Stream';vbadge.className='vbadge';}
+  // trails
+  trailsEl.innerHTML='';
+  const NS='http://www.w3.org/2000/svg';
+  const detectedList=[];
+  targets.forEach(t=>{
+    const r=refs[t.id];
+    r.wrap.style.left=(t.x/W*100)+'%';r.wrap.style.top=(t.y/H*100)+'%';
+    const detected = on && cfg.classes[t.cls] && !t.hide;
+    if(detected) detectedList.push(t);
+    const showBox=detected&&cfg.box, showLbl=detected&&cfg.label, showTraj=detected&&cfg.traj;
+    if(showBox){
+      r.box.style.display='block';
+      r.box.style.left=(t.x/W*100)+'%';r.box.style.top=(t.y/H*100)+'%';
+      r.box.style.width=(t.w/W*100)+'%';r.box.style.height=(t.h/H*100)+'%';
+      r.box.style.borderColor=COLOR[t.cls];
+      r.box.classList.toggle('hl', hoverId===t.id);
+    } else r.box.style.display='none';
+    if(showLbl){
+      r.lbl.style.display='block';
+      r.lbl.style.left=(t.x/W*100)+'%';
+      r.lbl.style.top=((t.y-t.h/2-4)/H*100)+'%';
+      r.lbl.style.background=COLOR[t.cls];
+      r.lbl.textContent=LABEL[t.cls]+' '+ (85+(frame*7+t.id.charCodeAt(1))%14) +'%';
+    } else r.lbl.style.display='none';
+    if(showTraj && t.hist.length>2 && (t.vx||t.vy)){
+      const keep=Math.min(t.hist.length, Math.round(cfg.trajLen*30));
+      const slice=t.hist.slice(-keep);
+      const seg=Math.max(2,Math.floor(slice.length/22));
+      for(let i=seg;i<slice.length;i+=seg){
+        const a=slice[i-seg],b=slice[i]||slice[slice.length-1];
+        const op=0.12+0.5*(i/slice.length);
+        const ln=document.createElementNS(NS,'line');
+        ln.setAttribute('x1',a[0]);ln.setAttribute('y1',a[1]);
+        ln.setAttribute('x2',b[0]);ln.setAttribute('y2',b[1]);
+        ln.setAttribute('stroke',COLOR[t.cls]);ln.setAttribute('stroke-width',2);
+        ln.setAttribute('stroke-linecap','round');ln.setAttribute('opacity',op);
+        trailsEl.appendChild(ln);
       }
+    }
+  });
+  renderList(detectedList);
+}
+function renderList(list){
+  detCnt.textContent=list.length+' object'+(list.length===1?'':'s');
+  if(list.length===0){dtbody.innerHTML='';detEmpty.style.display='block';return;}
+  detEmpty.style.display='none';
+  dtbody.innerHTML=list.map(t=>{
+    const conf=85+(frame*7+t.id.charCodeAt(1))%14;
+    return `<tr data-id="${t.id}" class="${hoverId===t.id?'hl':''}">
+      <td><span class="sw" style="background:${COLOR[t.cls]}"></span></td>
+      <td class="id">#${t.hex}</td>
+      <td>${LABEL[t.cls]}</td>
+      <td class="conf">${conf}%</td>
+      <td><input type="checkbox" class="hide-cb" data-id="${t.id}" ${t.hide?'checked':''}></td>
+    </tr>`;
+  }).join('');
+  // wire row hover + hide checkbox
+  dtbody.querySelectorAll('tr').forEach(tr=>{
+    tr.addEventListener('mouseenter',()=>{hoverId=tr.dataset.id;});
+    tr.addEventListener('mouseleave',()=>{hoverId=null;});
+  });
+  dtbody.querySelectorAll('.hide-cb').forEach(cb=>{
+    cb.addEventListener('click',e=>e.stopPropagation());
+    cb.addEventListener('change',e=>{
+      const t=targets.find(x=>x.id===e.target.dataset.id); if(t){t.hide=e.target.checked;}
     });
   });
-  // state line
-  const st=document.getElementById('stateText');
-  if(!cfg.enable){st.textContent='Video Overlay disabled — all streams are clean (backward compatible)';}
-  else{
-    const on=[];if(cfg.scope.main)on.push('Main');if(cfg.scope.sub)on.push('Sub');
-    const cls=[];for(const k in cfg.classes)if(cfg.classes[k])cls.push(CLASS_LABEL[k]);
-    const cont=[];if(cfg.box)cont.push('Box');if(cfg.traj)cont.push('Trajectory');if(cfg.label)cont.push('Label');
-    st.textContent='Overlaid streams: '+(on.length?on.join(' + '):'(none — all clean)')+
-      ' · Content: '+(cont.length?cont.join(' + '):'(none)')+
-      ' · Classes: '+(cls.length?cls.join(', '):'(none)')+
-      (cfg.traj?' · Trajectory '+cfg.trajLen+'s':'');
-  }
 }
-
-/* ============ wire up controls ============ */
+// controls
 function bind(){
-  document.getElementById('ovEnable').addEventListener('change',e=>{cfg.enable=e.target.checked;updateUI();});
-  document.getElementById('cbBox').addEventListener('change',e=>{cfg.box=e.target.checked;updateUI();});
-  document.getElementById('cbTraj').addEventListener('change',e=>{cfg.traj=e.target.checked;updateUI();});
-  document.getElementById('cbLabel').addEventListener('change',e=>{cfg.label=e.target.checked;updateUI();});
-  document.getElementById('trajLen').addEventListener('input',e=>{
-    let v=parseInt(e.target.value,10);if(isNaN(v))v=2;v=Math.max(1,Math.min(10,v));cfg.trajLen=v;updateUI();
-  });
-  document.querySelectorAll('.ov-class').forEach(c=>c.addEventListener('change',e=>{cfg.classes[e.target.dataset.cls]=e.target.checked;updateUI();}));
-  document.querySelectorAll('.ov-scope').forEach(c=>c.addEventListener('change',e=>{cfg.scope[e.target.stream||e.target.dataset.stream]=e.target.checked;updateUI();}));
+  document.getElementById('ovEnable').addEventListener('change',e=>{cfg.enable=e.target.checked;ui();});
+  document.getElementById('cbBox').addEventListener('change',e=>{cfg.box=e.target.checked;ui();});
+  document.getElementById('cbTraj').addEventListener('change',e=>{cfg.traj=e.target.checked;ui();});
+  document.getElementById('cbLabel').addEventListener('change',e=>{cfg.label=e.target.checked;ui();});
+  document.getElementById('trajLen').addEventListener('input',e=>{let v=parseInt(e.target.value,10);if(isNaN(v))v=2;v=Math.max(1,Math.min(10,v));cfg.trajLen=v;});
+  document.querySelectorAll('.ov-class').forEach(c=>c.addEventListener('change',e=>{cfg.classes[e.target.dataset.cls]=e.target.checked;ui();}));
+  document.querySelectorAll('.ov-scope').forEach(c=>c.addEventListener('change',e=>{cfg.scope[e.target.dataset.stream]=e.target.checked;ui();}));
   document.getElementById('saveBtn').addEventListener('click',save);
   document.addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key==='s'){e.preventDefault();save();}});
 }
-function updateUI(){
+function ui(){
   const on=cfg.enable;
-  document.getElementById('ovEnableHint').textContent= on?'On — boxes/trajectories/labels burned into selected streams':'Off — streams stay clean (backward compatible)';
+  document.getElementById('ovEnableHint').textContent=on?'On':'Off — clean stream';
   document.getElementById('ovEnableHint').style.color=on?'var(--success)':'var(--text-3)';
-  // dim config rows when disabled
-  ['rowContent','rowClass','rowScope','rowTrajLen'].forEach(id=>{
-    document.getElementById(id).style.opacity=on?'1':'0.45';
-    document.getElementById(id).style.pointerEvents=on?'auto':'none';
-  });
-  // traj length row only if traj checked
+  ['rowContent','rowClass','rowScope'].forEach(id=>{document.getElementById(id).style.opacity=on?'1':'0.45';document.getElementById(id).style.pointerEvents=on?'auto':'none';});
   document.getElementById('rowTrajLen').style.opacity=(on&&cfg.traj)?'1':'0.45';
   document.getElementById('rowTrajLen').style.pointerEvents=(on&&cfg.traj)?'auto':'none';
 }
@@ -442,18 +335,14 @@ function save(){
   document.querySelectorAll('.err').forEach(e=>e.classList.remove('err'));
   if(!cfg.enable){toast('Saved successfully (Video Overlay disabled — clean stream)',false);return;}
   let ok=true;
-  const cont=cfg.box||cfg.traj||cfg.label; if(!cont){document.getElementById('rowContent').classList.add('err');ok=false;}
-  const anyCls=Object.values(cfg.classes).some(Boolean); if(!anyCls){document.getElementById('rowClass').classList.add('err');ok=false;}
-  const anyScope=cfg.scope.main||cfg.scope.sub; if(!anyScope){document.getElementById('rowScope').classList.add('err');ok=false;}
+  if(!(cfg.box||cfg.traj||cfg.label)){document.getElementById('rowContent').classList.add('err');ok=false;}
+  if(!Object.values(cfg.classes).some(Boolean)){document.getElementById('rowClass').classList.add('err');ok=false;}
+  if(!(cfg.scope.main||cfg.scope.sub)){document.getElementById('rowScope').classList.add('err');ok=false;}
   if(!ok){toast('Please fix the highlighted fields before saving',true);return;}
   toast('Saved successfully — Video Overlay enabled',false);
 }
-function toast(msg,isErr){
-  const t=document.getElementById('toast');document.getElementById('toastMsg').textContent=msg;
-  t.classList.toggle('err',!!isErr);t.querySelector('.ti').textContent=isErr?'!':'✓';
-  t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2600);
-}
-bind();updateUI();step();
+function toast(msg,isErr){const t=document.getElementById('toast');document.getElementById('toastMsg').textContent=msg;t.classList.toggle('err',!!isErr);t.querySelector('.ti').textContent=isErr?'!':'✓';t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2600);}
+bind();ui();step();
 </script>
 </body>
 </html>
